@@ -31,9 +31,10 @@ async def find_device(timeout: float = 10.0,
 class Trex:
     """Connect to the toy and send commands."""
 
-    def __init__(self, device: BLEDevice):
+    def __init__(self, device: BLEDevice, debug_status: bool = False):
         self._device = device
         self._client = BleakClient(device)
+        self._debug_status = debug_status
 
     async def __aenter__(self) -> "Trex":
         await self.connect()
@@ -48,6 +49,14 @@ class Trex:
 
     async def connect(self) -> None:
         await self._client.connect()
+        if self._debug_status:
+            # The toy connects and ACKs our writes, but doesn't move. Listen on the
+            # status characteristic to see whether it reacts to the commands at all.
+            await self._client.start_notify(protocol.STATUS_CHAR_UUID, self._on_status)
+
+    @staticmethod
+    def _on_status(_char, data: bytearray) -> None:
+        print("status:", data.hex(" "))
 
     async def disconnect(self) -> None:
         if self._client.is_connected:
