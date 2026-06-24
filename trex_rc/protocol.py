@@ -25,6 +25,13 @@ STATUS_CHAR_UUID = "0000fff2-0000-1000-8000-00805f9b34fb"  # notify
 # Name the toy advertises (prefix match; firmware revisions append a suffix).
 DEVICE_NAME_PREFIX = "Robo-Rex"
 
+# --- Unlock -------------------------------------------------------------------------
+# The decompiled command set alone doesn't work: the toy ignores every motion command.
+# Comparing a BLE capture from a working client against ours, the only difference is one
+# extra packet the working client writes immediately after connecting — an unlock/auth
+# step the toy requires before it will accept commands. This is that packet.
+UNLOCK_PACKET = bytes([0x55, 0xAA, 0xF1, 0x6B, 0x5C])
+
 
 class Cmd(IntEnum):
     STOP = 0x00
