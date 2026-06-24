@@ -3,4 +3,4 @@ from . import protocol
 from .client import Trex, TrexNotFound, find_device
 
 __all__ = ["protocol", "Trex", "TrexNotFound", "find_device"]
-__version__ = "0.2.0"
+__version__ = "1.0.0"

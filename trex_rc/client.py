@@ -1,7 +1,7 @@
 """Async BLE client for the remote-control T-rex."""
 from __future__ import annotations
 
-from typing import Optional
+import asyncio
 
 from bleak import BleakClient, BleakScanner
 from bleak.backends.device import BLEDevice
@@ -29,12 +29,11 @@ async def find_device(timeout: float = 10.0,
 
 
 class Trex:
-    """Connect to the toy and send commands."""
+    """Connect to the toy, unlock it, and send commands."""
 
-    def __init__(self, device: BLEDevice, debug_status: bool = False):
+    def __init__(self, device: BLEDevice):
         self._device = device
         self._client = BleakClient(device)
-        self._debug_status = debug_status
 
     async def __aenter__(self) -> "Trex":
         await self.connect()
@@ -49,14 +48,14 @@ class Trex:
 
     async def connect(self) -> None:
         await self._client.connect()
-        if self._debug_status:
-            # The toy connects and ACKs our writes, but doesn't move. Listen on the
-            # status characteristic to see whether it reacts to the commands at all.
-            await self._client.start_notify(protocol.STATUS_CHAR_UUID, self._on_status)
+        # The toy drops every motion command until it receives the unlock packet, so
+        # send it before anything else.
+        await self.unlock()
 
-    @staticmethod
-    def _on_status(_char, data: bytearray) -> None:
-        print("status:", data.hex(" "))
+    async def unlock(self) -> None:
+        await self._write(protocol.UNLOCK_PACKET)
+        # Give the firmware a moment to arm after the unlock before we drive it.
+        await asyncio.sleep(0.1)
 
     async def disconnect(self) -> None:
         if self._client.is_connected:
